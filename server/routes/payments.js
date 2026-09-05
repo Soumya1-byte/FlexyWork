@@ -27,23 +27,26 @@ async function completeShiftAfterPayment(shift) {
 
   await Promise.all(
     attendances.map(async (attendance) => {
+      // Guard: skip if already completed to prevent double-counting
+      if (attendance.status === "completed") return;
+
       if (!attendance.checkOutAt) {
         attendance.checkOutAt = now;
-        attendance.status = "completed";
-        attendance.durationMinutes = Math.max(
-          1,
-          Math.round((attendance.checkOutAt - attendance.checkInAt) / 60000)
-        );
-        await attendance.save();
-        await WorkerProfile.findOneAndUpdate(
-          { userId: attendance.workerId },
-          { $inc: { completedShifts: 1 } }
-        );
-        await Notification.create({
-          userId: attendance.workerId,
-          message: `Your shift "${shift.title}" is complete. Payment has been received.`
-        });
       }
+      attendance.status = "completed";
+      attendance.durationMinutes = Math.max(
+        1,
+        Math.round((attendance.checkOutAt - attendance.checkInAt) / 60000)
+      );
+      await attendance.save();
+      await WorkerProfile.findOneAndUpdate(
+        { userId: attendance.workerId },
+        { $inc: { completedShifts: 1 } }
+      );
+      await Notification.create({
+        userId: attendance.workerId,
+        message: `Your shift "${shift.title}" is complete. Payment has been received.`
+      });
     })
   );
 }

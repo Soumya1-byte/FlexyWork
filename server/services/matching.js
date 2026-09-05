@@ -16,8 +16,12 @@ function skillScore(workerSkills = [], shiftSkills = []) {
 
 function availabilityScore(availability = [], shift) {
   // Parse date as local time by replacing dashes to avoid UTC midnight offset
-  const [year, month, day] = shift.date.split('-').map(Number);
-  const dayText = new Date(year, month - 1, day).toLocaleDateString("en-US", { weekday: "short" });
+  const parts = (shift.date || "").split('-').map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) return 70;
+  const [year, month, day] = parts;
+  const parsed = new Date(year, month - 1, day);
+  if (isNaN(parsed.getTime())) return 70;
+  const dayText = parsed.toLocaleDateString("en-US", { weekday: "short" });
   const daySlot = availability.find((item) => item.day === dayText);
   if (!daySlot) return 70;
   if (daySlot.status === "Unavailable") return 20;

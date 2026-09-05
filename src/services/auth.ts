@@ -1,4 +1,4 @@
-import { User, UserRole } from '../types';
+import type { User, UserRole } from '../types';
 import { apiCall } from './api';
 
 type ApiUser = Omit<User, 'role' | 'avatarUrl'> & {

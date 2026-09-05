@@ -11,9 +11,10 @@ import {
   ShieldCheck,
   ShieldAlert,
   Clock,
-  Save
+  Save,
+  Upload
 } from 'lucide-react';
-import { Certification, VerificationStatus } from '../../types';
+import type { Certification, VerificationStatus } from '../../types';
 import {
   addCertification,
   deleteCertification,
@@ -30,6 +31,9 @@ interface FormState {
   credentialId: string;
   description: string;
   documentUrl: string;
+  documentFileName: string;
+  documentFileType: string;
+  documentDataUrl: string;
 }
 
 const emptyForm: FormState = {
@@ -39,7 +43,10 @@ const emptyForm: FormState = {
   expiryDate: '',
   credentialId: '',
   description: '',
-  documentUrl: ''
+  documentUrl: '',
+  documentFileName: '',
+  documentFileType: '',
+  documentDataUrl: ''
 };
 
 function VerificationBadge({ status }: { status: VerificationStatus }) {
@@ -107,7 +114,10 @@ export default function CertificateSection() {
       expiryDate: cert.expiryDate || '',
       credentialId: cert.credentialId || '',
       description: cert.description || '',
-      documentUrl: cert.documentUrl || ''
+      documentUrl: cert.documentUrl || '',
+      documentFileName: cert.documentFileName || '',
+      documentFileType: cert.documentFileType || '',
+      documentDataUrl: cert.documentDataUrl || ''
     });
     setError('');
     setFeedback('');
@@ -118,6 +128,43 @@ export default function CertificateSection() {
     setShowForm(false);
     setEditingId(null);
     setForm(emptyForm);
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setError('Upload a PDF, PNG, JPG, or WEBP certificate file.');
+      event.target.value = '';
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Certificate file must be 2 MB or smaller.');
+      event.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setForm((current) => ({
+        ...current,
+        documentFileName: file.name,
+        documentFileType: file.type,
+        documentDataUrl: String(reader.result)
+      }));
+      setError('');
+      if (!form.title.trim()) {
+        setForm((current) => ({
+          ...current,
+          title: file.name.replace(/\.[^.]+$/, '')
+        }));
+      }
+    };
+    reader.onerror = () => setError('Could not read the certificate file.');
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -139,7 +186,10 @@ export default function CertificateSection() {
           expiryDate: form.expiryDate.trim(),
           credentialId: form.credentialId.trim(),
           description: form.description.trim(),
-          documentUrl: form.documentUrl.trim()
+          documentUrl: form.documentUrl.trim(),
+          documentFileName: form.documentFileName,
+          documentFileType: form.documentFileType,
+          documentDataUrl: form.documentDataUrl
         });
         setFeedback('Certificate updated. Re-submitted for admin review.');
       } else {
@@ -150,7 +200,10 @@ export default function CertificateSection() {
           expiryDate: form.expiryDate.trim(),
           credentialId: form.credentialId.trim(),
           description: form.description.trim(),
-          documentUrl: form.documentUrl.trim()
+          documentUrl: form.documentUrl.trim(),
+          documentFileName: form.documentFileName,
+          documentFileType: form.documentFileType,
+          documentDataUrl: form.documentDataUrl
         });
         setFeedback('Certificate added. Our admins will review it shortly.');
       }
@@ -302,6 +355,28 @@ export default function CertificateSection() {
               </div>
 
               <div className="space-y-1 sm:col-span-2">
+                <label className="text-xs font-bold text-ink">Upload Certificate File</label>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-surface-border bg-stone-50/40 px-3.5 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-bold text-ink">
+                      {form.documentFileName || 'PDF, PNG, JPG, or WEBP'}
+                    </p>
+                    <p className="text-[10px] text-ink-subtle">Maximum file size: 2 MB</p>
+                  </div>
+                  <label className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-brand-200 bg-white px-3 py-2 text-xs font-bold text-brand-700 hover:bg-brand-50">
+                    <Upload size={13} />
+                    Choose File
+                    <input
+                      type="file"
+                      accept=".pdf,image/png,image/jpeg,image/webp"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="space-y-1 sm:col-span-2">
                 <label className="text-xs font-bold text-ink">Description (optional)</label>
                 <textarea
                   rows={2}
@@ -389,6 +464,15 @@ export default function CertificateSection() {
                         className="inline-flex items-center gap-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-ink border border-surface-border px-3 py-1.5 text-[11px] font-bold transition-colors"
                       >
                         <ExternalLink size={12} /> View
+                      </a>
+                    )}
+                    {cert.documentDataUrl && (
+                      <a
+                        href={cert.documentDataUrl}
+                        download={cert.documentFileName || `${cert.title}-certificate`}
+                        className="inline-flex items-center gap-1 rounded-lg bg-brand-600 hover:bg-brand-700 text-white border border-brand-600 px-3 py-1.5 text-[11px] font-bold transition-colors"
+                      >
+                        <ExternalLink size={12} /> File
                       </a>
                     )}
                     <button

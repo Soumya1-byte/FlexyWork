@@ -15,7 +15,7 @@ import {
   getAllCertifications,
   setCertificateVerification
 } from '../../services/admin';
-import { Certification, VerificationStatus } from '../../types';
+import type { Certification, VerificationStatus } from '../../types';
 
 function StatusBadge({ status }: { status: VerificationStatus }) {
   if (status === 'verified') {
@@ -233,6 +233,15 @@ export default function CertificateReviewPanel() {
                         className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-700 hover:text-brand-800 pt-1"
                       >
                         <ExternalLink size={11} /> View Document
+                      </a>
+                    )}
+                    {cert.documentDataUrl && (
+                      <a
+                        href={cert.documentDataUrl}
+                        download={cert.documentFileName || `${cert.title}-certificate`}
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-700 hover:text-brand-800 pt-1"
+                      >
+                        <ExternalLink size={11} /> Download Uploaded File
                       </a>
                     )}
                   </div>

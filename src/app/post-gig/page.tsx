@@ -11,21 +11,23 @@ import {
 import { createGig, parseShiftNaturalLanguage, parseAIPrompt, enhanceShiftDescription, getWageBenchmarks } from '../../services/gigs';
 
 const CATEGORIES = [
-  { id: 'Cleaning', name: 'Cleaning', icon: '🧹', skills: ['Deep Cleaning', 'Sanitization', 'Floor Scrubbing', 'Window Cleaning'] },
-  { id: 'Repairs', name: 'Repairs & Maintenance', icon: '🔧', skills: ['Wiring & Electrical', 'Plumbing', 'Appliance Fix', 'Carpentry'] },
-  { id: 'Gardening', name: 'Gardening & Outdoor', icon: '🌿', skills: ['Lawn Mowing', 'Pruning & Hedging', 'Soil Prep', 'Plant Care'] },
-  { id: 'Cafe', name: 'Cafe & Food Service', icon: '☕', skills: ['Table Service', 'Barista / Coffee', 'Kitchen Prep', 'Dishwashing', 'Cashier'] },
-  { id: 'Retail', name: 'Retail & Store Helper', icon: '🛍️', skills: ['Inventory Stocking', 'Customer Greeting', 'Billing Support', 'Tagging'] },
-  { id: 'Logistics', name: 'Delivery & Logistics', icon: '📦', skills: ['Package Sorting', 'Loading / Unloading', 'Local Delivery'] },
-  { id: 'Events', name: 'Event Support', icon: '🎉', skills: ['Guest Check-in', 'Stage Setup', 'Catering Assistance', 'Crowd Guidance'] },
-  { id: 'General', name: 'General Helper', icon: '🤝', skills: ['Heavy Lifting', 'Basic Communication', 'Errands', 'Organization'] }
+  { id: 'Electrical', name: 'Electrician', icon: '⚡', skills: ['Wiring Repair', 'Switchboard Fix', 'Safety Testing', 'Appliance Check'] },
+  { id: 'Plumbing', name: 'Plumber', icon: '🚰', skills: ['Leak Repair', 'Tap Fitting', 'Drain Cleaning', 'Bathroom Fixtures'] },
+  { id: 'Carpentry', name: 'Carpenter', icon: '🪚', skills: ['Furniture Repair', 'Door Fitting', 'Shelving', 'Wood Polishing'] },
+  { id: 'Painting', name: 'Painter', icon: '🎨', skills: ['Wall Painting', 'Putty Work', 'Texture Finish', 'Waterproof Coating'] },
+  { id: 'Domestic Help', name: 'Domestic Help', icon: '🏠', skills: ['Housekeeping', 'Utensil Cleaning', 'Laundry Support', 'Meal Prep'] },
+  { id: 'Caregiving', name: 'Caregiver', icon: '🩺', skills: ['Elder Care', 'Patient Assistance', 'Medication Reminder', 'Mobility Support'] },
+  { id: 'Driving', name: 'Driver', icon: '🚗', skills: ['Local Driving', 'Outstation Trip', 'School Pickup', 'Document Delivery'] },
+  { id: 'Gardening', name: 'Gardener', icon: '🌿', skills: ['Lawn Mowing', 'Pruning', 'Plant Care', 'Soil Preparation'] },
+  { id: 'Cleaning', name: 'Cleaner', icon: '🧹', skills: ['Deep Cleaning', 'Sanitization', 'Floor Scrubbing', 'Window Cleaning'] },
+  { id: 'Technician', name: 'Technician', icon: '🔧', skills: ['AC Service', 'RO Service', 'Device Setup', 'Preventive Maintenance'] }
 ];
 
 const PRESET_PROMPTS = [
-  'I need a waiter this Saturday from 6 PM to 11 PM. Pay is ₹1000 for the shift. Must have customer service experience.',
-  'Need 1 cashier this Saturday from 9 AM to 3 PM. ₹150 per hour. Must know Excel.',
-  'Need 1 deep cleaner for 3BHK flat on Sunday 9 AM to 2 PM paying ₹1500.',
-  'Need 1 electrician for store wiring repairs today from 2 PM to 6 PM paying ₹1200.'
+  'Need one verified electrician today from 2 PM to 6 PM for switchboard repair. Pay ₹1200. Emergency service.',
+  'Need two cleaners for apartment deep cleaning on Sunday 9 AM to 2 PM. Pay ₹1500 each.',
+  'Need one caregiver for elder assistance tomorrow 8 AM to 2 PM. Certification required.',
+  'Need plumber for urgent leak repair within 5 km. Pay ₹900 with invoice.'
 ];
 
 export default function PostGigPage() {
@@ -54,6 +56,18 @@ export default function PostGigPage() {
   const [paymentType, setPaymentType] = useState<'fixed' | 'hourly'>('fixed');
   const [paymentAmount, setPaymentAmount] = useState<number | ''>(800);
   const [urgency, setUrgency] = useState<'normal' | 'urgent'>('normal');
+  const [serviceMode, setServiceMode] = useState<'scheduled' | 'emergency' | 'on_demand'>('scheduled');
+  const [customerType, setCustomerType] = useState<'household' | 'institution' | 'cooperative'>('household');
+  const [maximumDistance, setMaximumDistance] = useState(8);
+  const [certificationRequired, setCertificationRequired] = useState(false);
+  const [certificateRequirementDetails, setCertificateRequirementDetails] = useState('');
+  const [insuranceIncluded, setInsuranceIncluded] = useState(true);
+  const [invoiceRequired, setInvoiceRequired] = useState(true);
+  const [welfareContribution, setWelfareContribution] = useState<number | ''>(50);
+  const [emergencyContact, setEmergencyContact] = useState('');
+  const [certificateName, setCertificateName] = useState('');
+  const [certificateType, setCertificateType] = useState('');
+  const [certificateDataUrl, setCertificateDataUrl] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -97,7 +111,10 @@ export default function PostGigPage() {
         }
         if (parsedShift.paymentType) setPaymentType(parsedShift.paymentType);
         if (parsedShift.location) setLocation(parsedShift.location);
-        if (parsedShift.urgency) setUrgency(parsedShift.urgency);
+        if (parsedShift.urgency) {
+          setUrgency(parsedShift.urgency);
+          if (parsedShift.urgency === 'urgent') setServiceMode('emergency');
+        }
 
         if (clarifications && clarifications.length > 0) {
           setAiSuccessMessage(`Draft generated! Please review and fill in highlighted fields (${clarifications.join(', ')}).`);
@@ -187,6 +204,8 @@ export default function PostGigPage() {
     if (paymentAmount && Number(paymentAmount) > 0) score += 20;
     if (location && location.length >= 4) score += 15;
     if (startTime && endTime) score += 10;
+    if (maximumDistance > 0) score += 5;
+    if (insuranceIncluded || invoiceRequired) score += 5;
     return Math.min(100, score);
   })();
 
@@ -207,6 +226,43 @@ export default function PostGigPage() {
       setRequiredSkills([...requiredSkills, newSkillInput.trim()]);
       setNewSkillInput('');
     }
+  };
+
+  const handleCertificateUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setError('Please upload a PDF, PNG, JPG, or WEBP certificate file.');
+      event.target.value = '';
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Certificate file must be 2 MB or smaller.');
+      event.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCertificateName(file.name);
+      setCertificateType(file.type);
+      setCertificateDataUrl(String(reader.result));
+      setCertificationRequired(true);
+      setError('');
+    };
+    reader.onerror = () => {
+      setError('Could not read certificate file. Please try another file.');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeCertificateUpload = () => {
+    setCertificateName('');
+    setCertificateType('');
+    setCertificateDataUrl('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -245,6 +301,18 @@ export default function PostGigPage() {
         paymentType,
         paymentAmount: Number(paymentAmount),
         location,
+        serviceMode,
+        customerType,
+        maximumDistance,
+        certificationRequired,
+        certificateRequirementDetails: certificateRequirementDetails.trim() || undefined,
+        certificateName: certificateName || undefined,
+        certificateType: certificateType || undefined,
+        certificateDataUrl: certificateDataUrl || undefined,
+        insuranceIncluded,
+        invoiceRequired,
+        welfareContribution: Number(welfareContribution) || 0,
+        emergencyContact: emergencyContact.trim() || undefined,
         urgency
       });
 
@@ -284,13 +352,33 @@ export default function PostGigPage() {
             <span className="font-bold text-ink">{date} · {startTime} - {endTime}</span>
           </div>
           <div className="flex justify-between border-b border-surface-border pb-2">
+            <span className="text-ink-muted">Service Mode:</span>
+            <span className="font-bold text-ink capitalize">{serviceMode.replace('_', ' ')}</span>
+          </div>
+          <div className="flex justify-between border-b border-surface-border pb-2">
             <span className="text-ink-muted">Pay per worker:</span>
             <span className="font-bold text-brand-600">₹{paymentAmount} ({paymentType})</span>
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between border-b border-surface-border pb-2">
             <span className="text-ink-muted">Location:</span>
             <span className="font-bold text-ink truncate max-w-[200px]">{location}</span>
           </div>
+          <div className="flex justify-between">
+            <span className="text-ink-muted">Safeguards:</span>
+            <span className="font-bold text-ink">{insuranceIncluded ? 'Insurance' : 'No insurance'} · {invoiceRequired ? 'Invoice' : 'No invoice'}</span>
+          </div>
+          {certificateName && (
+            <div className="flex justify-between border-t border-surface-border pt-2">
+              <span className="text-ink-muted">Certificate:</span>
+              <span className="font-bold text-ink truncate max-w-[200px]">{certificateName}</span>
+            </div>
+          )}
+          {certificateRequirementDetails && (
+            <div className="border-t border-surface-border pt-2">
+              <span className="text-ink-muted">Certificate Details:</span>
+              <p className="mt-1 text-ink font-bold leading-relaxed">{certificateRequirementDetails}</p>
+            </div>
+          )}
         </div>
 
         <div className="pt-4 flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
@@ -503,6 +591,38 @@ export default function PostGigPage() {
                 className="w-full rounded-2xl border border-surface-border bg-stone-50/40 px-4 py-3 text-sm font-bold text-ink focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"
               />
             </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-ink-muted">Service Mode</label>
+                <select
+                  value={serviceMode}
+                  onChange={(e) => {
+                    const nextMode = e.target.value as 'scheduled' | 'emergency' | 'on_demand';
+                    setServiceMode(nextMode);
+                    setUrgency(nextMode === 'emergency' ? 'urgent' : 'normal');
+                  }}
+                  className="w-full rounded-xl border border-surface-border bg-stone-50/40 px-4 py-2.5 text-xs font-bold text-ink"
+                >
+                  <option value="scheduled">Scheduled Booking</option>
+                  <option value="on_demand">On-Demand Service</option>
+                  <option value="emergency">Emergency Service</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-ink-muted">Customer Type</label>
+                <select
+                  value={customerType}
+                  onChange={(e) => setCustomerType(e.target.value as 'household' | 'institution' | 'cooperative')}
+                  className="w-full rounded-xl border border-surface-border bg-stone-50/40 px-4 py-2.5 text-xs font-bold text-ink"
+                >
+                  <option value="household">Household</option>
+                  <option value="institution">Institution / Office</option>
+                  <option value="cooperative">Cooperative Federation</option>
+                </select>
+              </div>
+            </div>
           </div>
 
           {/* Section 3: Skills Required */}
@@ -651,7 +771,7 @@ export default function PostGigPage() {
           {/* Section 5: Location */}
           <div className="space-y-3 border-t border-surface-border pt-6">
             <label className="text-xs font-bold text-ink-muted uppercase tracking-wider block">
-              5. Work Location
+              5. Work Location & Geo Matching
             </label>
             <div className="relative">
               <MapPin size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-subtle" />
@@ -662,6 +782,32 @@ export default function PostGigPage() {
                 placeholder="e.g. 100ft Road, Indiranagar, Bangalore"
                 className="w-full rounded-2xl border border-surface-border bg-stone-50/40 pl-10 pr-4 py-3 text-xs font-bold text-ink focus:bg-white"
               />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-ink-muted">Worker Search Radius</label>
+                <div className="flex items-center gap-3 rounded-xl border border-surface-border bg-stone-50/40 px-3 py-2.5">
+                  <input
+                    type="range"
+                    min="1"
+                    max="25"
+                    value={maximumDistance}
+                    onChange={(e) => setMaximumDistance(Number(e.target.value))}
+                    className="flex-1"
+                  />
+                  <span className="w-12 text-right text-xs font-black text-ink">{maximumDistance} km</span>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-ink-muted">Emergency Contact</label>
+                <input
+                  type="tel"
+                  value={emergencyContact}
+                  onChange={(e) => setEmergencyContact(e.target.value)}
+                  placeholder="Optional contact for urgent jobs"
+                  className="w-full rounded-xl border border-surface-border bg-stone-50/40 px-4 py-2.5 text-xs font-bold text-ink"
+                />
+              </div>
             </div>
           </div>
 
@@ -721,6 +867,90 @@ export default function PostGigPage() {
                 <p className="text-[10px] text-brand-600">
                   For {workersRequired} worker{workersRequired > 1 ? 's' : ''} · Platform fee & insurance included
                 </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="flex items-center justify-between gap-3 rounded-xl border border-surface-border bg-stone-50/40 px-3.5 py-3 text-xs font-bold text-ink">
+                <span>Verified / certified worker required</span>
+                <input
+                  type="checkbox"
+                  checked={certificationRequired}
+                  onChange={(e) => setCertificationRequired(e.target.checked)}
+                  className="h-4 w-4 accent-brand-600"
+                />
+              </label>
+              <div className="rounded-xl border border-surface-border bg-stone-50/40 px-3.5 py-3 sm:col-span-2">
+                <label className="text-xs font-bold text-ink">Required certificate details</label>
+                <textarea
+                  rows={2}
+                  value={certificateRequirementDetails}
+                  onChange={(e) => {
+                    setCertificateRequirementDetails(e.target.value);
+                    if (e.target.value.trim()) setCertificationRequired(true);
+                  }}
+                  placeholder="e.g. Electrician must have valid trade certificate, safety training certificate, or cooperative verification document."
+                  className="mt-2 w-full rounded-lg border border-surface-border bg-white px-3 py-2 text-xs font-medium text-ink"
+                />
+              </div>
+              <div className="rounded-xl border border-surface-border bg-stone-50/40 px-3.5 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-bold text-ink">Upload required certificate</p>
+                    <p className="mt-0.5 text-[10px] font-semibold text-ink-subtle">PDF or image, max 2 MB</p>
+                  </div>
+                  <label className="shrink-0 cursor-pointer rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-[10px] font-black text-brand-700 hover:bg-brand-50">
+                    Upload
+                    <input
+                      type="file"
+                      accept=".pdf,image/png,image/jpeg,image/webp"
+                      onChange={handleCertificateUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                {certificateName && (
+                  <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-emerald-100 bg-emerald-50 px-2.5 py-1.5">
+                    <span className="truncate text-[10px] font-bold text-emerald-800">{certificateName}</span>
+                    <button
+                      type="button"
+                      onClick={removeCertificateUpload}
+                      className="shrink-0 text-emerald-700 hover:text-rose-600"
+                      title="Remove certificate"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                )}
+              </div>
+              <label className="flex items-center justify-between gap-3 rounded-xl border border-surface-border bg-stone-50/40 px-3.5 py-3 text-xs font-bold text-ink">
+                <span>Worker insurance cover included</span>
+                <input
+                  type="checkbox"
+                  checked={insuranceIncluded}
+                  onChange={(e) => setInsuranceIncluded(e.target.checked)}
+                  className="h-4 w-4 accent-brand-600"
+                />
+              </label>
+              <label className="flex items-center justify-between gap-3 rounded-xl border border-surface-border bg-stone-50/40 px-3.5 py-3 text-xs font-bold text-ink">
+                <span>Generate digital invoice</span>
+                <input
+                  type="checkbox"
+                  checked={invoiceRequired}
+                  onChange={(e) => setInvoiceRequired(e.target.checked)}
+                  className="h-4 w-4 accent-brand-600"
+                />
+              </label>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-ink-muted">Worker Welfare Contribution (₹)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="10"
+                  value={welfareContribution}
+                  onChange={(e) => setWelfareContribution(Number(e.target.value))}
+                  className="w-full rounded-xl border border-surface-border bg-stone-50/40 px-4 py-2.5 text-xs font-bold text-ink"
+                />
               </div>
             </div>
 
@@ -831,9 +1061,14 @@ export default function PostGigPage() {
               
               {/* Category & Status */}
               <div className="flex items-center justify-between border-b border-surface-border pb-3">
-                <span className="text-xs font-bold text-brand-600 bg-brand-50 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                  {category}
-                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="text-xs font-bold text-brand-600 bg-brand-50 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                    {category}
+                  </span>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100 uppercase tracking-wider">
+                    {customerType}
+                  </span>
+                </div>
                 <div className="flex items-center gap-2">
                   {urgency === 'urgent' && (
                     <span className="bg-rose-50 text-rose-700 border border-rose-100 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider animate-pulse">
@@ -885,10 +1120,39 @@ export default function PostGigPage() {
                   <span className="truncate">{location}</span>
                 </div>
                 <div className="flex items-center gap-1.5 col-span-2">
+                  <ShieldCheck size={13} className="text-emerald-600 shrink-0" />
+                  <span>{maximumDistance} km match radius · {serviceMode.replace('_', ' ')} mode</span>
+                </div>
+                <div className="flex items-center gap-1.5 col-span-2">
                   <Users size={13} className="text-ink-subtle shrink-0" />
                   <span>{workersRequired} Spot{workersRequired > 1 ? 's' : ''} Available</span>
                 </div>
               </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[10px] font-bold text-center">
+                <span className={`rounded-lg border px-2 py-1 ${certificationRequired ? 'bg-brand-50 text-brand-700 border-brand-200' : 'bg-stone-50 text-ink-subtle border-surface-border'}`}>
+                  Certified
+                </span>
+                <span className={`rounded-lg border px-2 py-1 ${certificateName ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-stone-50 text-ink-subtle border-surface-border'}`}>
+                  Certificate
+                </span>
+                <span className={`rounded-lg border px-2 py-1 ${insuranceIncluded ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-stone-50 text-ink-subtle border-surface-border'}`}>
+                  Insurance
+                </span>
+                <span className={`rounded-lg border px-2 py-1 ${invoiceRequired ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-stone-50 text-ink-subtle border-surface-border'}`}>
+                  Invoice
+                </span>
+              </div>
+              {certificateName && (
+                <div className="rounded-xl border border-violet-100 bg-violet-50 px-3 py-2 text-[10px] font-bold text-violet-800">
+                  Required certificate attached by seeker: <span className="font-black">{certificateName}</span>
+                </div>
+              )}
+              {certificateRequirementDetails && (
+                <div className="rounded-xl border border-brand-100 bg-brand-50 px-3 py-2 text-[10px] font-semibold text-brand-800">
+                  Required details: <span className="font-black">{certificateRequirementDetails}</span>
+                </div>
+              )}
 
               {/* Footer Payout & Worker CTA Preview */}
               <div className="flex items-center justify-between border-t border-surface-border pt-4">
@@ -899,6 +1163,9 @@ export default function PostGigPage() {
                   </p>
                   <p className="text-[10px] text-ink-subtle font-medium uppercase tracking-wider">
                     {paymentType === 'fixed' ? 'Fixed Payout' : 'Hourly Rate'}
+                  </p>
+                  <p className="text-[10px] text-emerald-700 font-bold mt-0.5">
+                    ₹{Number(welfareContribution) || 0} welfare fund
                   </p>
                 </div>
                 <span className="rounded-xl bg-brand-500 text-white px-4 py-2 text-xs font-bold shadow-sm">
@@ -924,4 +1191,3 @@ export default function PostGigPage() {
     </div>
   );
 }
-

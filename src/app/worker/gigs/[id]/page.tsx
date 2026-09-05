@@ -7,10 +7,10 @@ import {
   ArrowLeft, Calendar, Clock, MapPin, IndianRupee, 
   Play, CheckCircle, Navigation, Radio, CheckSquare, Square,
   Hourglass, CheckCircle2, XCircle, ArrowRight, ShieldCheck, Sparkles,
-  KeyRound, AlertCircle
+  KeyRound, AlertCircle, FileText
 } from 'lucide-react';
 import { Gig, User } from '../../../../types';
-import { getGigById, recordAttendance, applyForGig } from '../../../../services/gigs';
+import { getGigById, recordAttendance, applyForGig, getRequiredCertificate } from '../../../../services/gigs';
 import { getMe } from '../../../../services/auth';
 import StatusBadge from '../../../../components/ui/StatusBadge';
 
@@ -81,6 +81,22 @@ export default function WorkerGigDetailPage() {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const handleCertificateCheck = async () => {
+    if (!gig) return;
+    const certificate = await getRequiredCertificate(gig.id);
+    if (!certificate?.dataUrl) {
+      alert('No certificate file is uploaded for this gig.');
+      return;
+    }
+
+    const link = document.createElement('a');
+    link.href = certificate.dataUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.download = certificate.name || 'required-certificate';
+    link.click();
   };
 
   if (loading && !gig) {
@@ -201,6 +217,40 @@ export default function WorkerGigDetailPage() {
                   </span>
                 ))}
               </div>
+            </div>
+          )}
+
+          {(gig.certificationRequired || gig.certificateRequirementDetails || gig.hasCertificateUpload) && (
+            <div className="bg-white border border-surface-border rounded-xl p-5 shadow-2xs space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-xs font-bold text-ink uppercase tracking-wider">
+                    Required Certificate Check
+                  </h3>
+                  <p className="mt-1 text-xs text-ink-muted leading-relaxed">
+                    {gig.certificateRequirementDetails || 'The seeker requires a verified or certified worker for this service.'}
+                  </p>
+                </div>
+                <FileText size={18} className="shrink-0 text-violet-600" />
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold">
+                {gig.certificationRequired && (
+                  <span className="rounded-lg border border-brand-200 bg-brand-50 px-2.5 py-1 text-brand-700">Certification required</span>
+                )}
+                {gig.certificateName && (
+                  <span className="rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1 text-violet-700">{gig.certificateName}</span>
+                )}
+              </div>
+              {gig.hasCertificateUpload && (
+                <button
+                  type="button"
+                  onClick={handleCertificateCheck}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-bold text-violet-700 hover:bg-violet-100"
+                >
+                  <FileText size={13} />
+                  Check Uploaded Certificate
+                </button>
+              )}
             </div>
           )}
 
@@ -440,4 +490,3 @@ export default function WorkerGigDetailPage() {
     </div>
   );
 }
-

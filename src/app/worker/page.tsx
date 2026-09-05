@@ -4,14 +4,14 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
-  Briefcase, IndianRupee, Star, CheckCircle, ShieldCheck, 
-  MapPin, Clock, Radio, ArrowRight, RefreshCw, Calendar
+  Briefcase, Star, ShieldCheck, MapPin, Clock, ArrowRight, RefreshCw
 } from 'lucide-react';
-import { Gig, User } from '../../types';
+import type { Gig, User } from '../../types';
 import GigCard from '../../components/shared/GigCard';
 import EarningsChart from '../../components/charts/EarningsChart';
 import EmptyState from '../../components/ui/EmptyState';
 import WorkerVerificationBanner from '../../components/worker/WorkerVerificationBanner';
+import CertificateSection from '../../components/worker/CertificateSection';
 import { getMe } from '../../services/auth';
 import { getGigs, getMyGigs } from '../../services/gigs';
 import { getMyWorkerProfile } from '../../services/providers';
@@ -102,6 +102,8 @@ export default function WorkerDashboard() {
           </div>
         </div>
       </div>
+
+      <CertificateSection />
 
       {/* Featured: Your Next Shift */}
       {nextShift && (
@@ -276,4 +278,3 @@ export default function WorkerDashboard() {
     </div>
   );
 }
-

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Search, MapPin, Plus, Calendar, AlertCircle, Users, ArrowRight, Clock, Store, ShieldCheck } from 'lucide-react';
-import { WorkerProfile, Gig, User } from '../../types';
+import type { WorkerProfile, Gig, User } from '../../types';
 import ProviderCard from '../../components/shared/ProviderCard';
 import GigCard from '../../components/shared/GigCard';
 import { getMe } from '../../services/auth';
@@ -199,4 +199,3 @@ export default function SeekerHome() {
     </div>
   );
 }
-

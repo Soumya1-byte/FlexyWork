@@ -36,6 +36,9 @@ const certificationSchema = new mongoose.Schema(
     credentialId: { type: String, default: "" },
     description: { type: String, default: "" },
     documentUrl: { type: String, default: "" },
+    documentFileName: { type: String, default: "" },
+    documentFileType: { type: String, default: "" },
+    documentDataUrl: { type: String, default: "" },
     verificationStatus: {
       type: String,
       enum: ["pending", "verified", "rejected"],
@@ -74,7 +77,7 @@ const workerProfileSchema = new mongoose.Schema(
     rating: { type: Number, default: 4.8 },
     reliabilityScore: { type: Number, default: 94 },
     completedShifts: { type: Number, default: 0 },
-    isVerified: { type: Boolean, default: true },
+    isVerified: { type: Boolean, default: false },
     location: { type: String, default: "Indiranagar" },
     latitude: { type: Number, default: null },
     longitude: { type: Number, default: null },
@@ -88,6 +91,20 @@ const workerProfileSchema = new mongoose.Schema(
 // Compound geo index used by the worker-search bounding-box pre-filter
 workerProfileSchema.index({ latitude: 1, longitude: 1 });
 
+const seekerCertificateSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true, trim: true },
+    certificateNumber: { type: String, default: "" },
+    issuedBy: { type: String, default: "" },
+    expiresOn: { type: String, default: "" },
+    notes: { type: String, default: "" },
+    fileName: { type: String, required: true },
+    fileType: { type: String, required: true },
+    fileDataUrl: { type: String, default: "" }
+  },
+  { _id: true, timestamps: true }
+);
+
 const employerProfileSchema = new mongoose.Schema(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, unique: true },
@@ -96,7 +113,8 @@ const employerProfileSchema = new mongoose.Schema(
     description: String,
     location: { type: String, default: "Indiranagar" },
     verificationStatus: { type: String, enum: ["pending", "verified"], default: "verified" },
-    rating: { type: Number, default: 4.7 }
+    rating: { type: Number, default: 4.7 },
+    certificates: [seekerCertificateSchema]
   },
   { timestamps: true }
 );

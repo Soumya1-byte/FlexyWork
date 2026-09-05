@@ -7,7 +7,7 @@ import { EmployerProfile, WorkerProfile } from "../models/Profile.js";
 import { User } from "../models/User.js";
 import { Otp } from "../models/Otp.js";
 import { sendOtpEmail } from "../services/mailer.js";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, requireRole } from "../middleware/auth.js";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
 
@@ -23,11 +23,36 @@ const registerSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
   password: z.string().min(6),
-  role: z.enum(["worker", "employer", "seeker", "admin"]),
+  role: z.enum(["worker", "employer", "seeker"]),
   location: z.string().min(2).optional(),
   businessName: z.string().optional(),
   otp: z.string().min(4).max(8).optional()
 });
+
+const seekerCertificateSchema = z.object({
+  title: z.string().min(2).max(120),
+  certificateNumber: z.string().max(80).optional(),
+  issuedBy: z.string().max(120).optional(),
+  expiresOn: z.string().max(20).optional(),
+  notes: z.string().max(500).optional(),
+  fileName: z.string().min(1).max(180),
+  fileType: z.string().min(1).max(120),
+  fileDataUrl: z.string().min(1).max(3_000_000)
+});
+
+function serializeCertificate(certificate) {
+  return {
+    id: certificate._id?.toString(),
+    title: certificate.title,
+    certificateNumber: certificate.certificateNumber,
+    issuedBy: certificate.issuedBy,
+    expiresOn: certificate.expiresOn,
+    notes: certificate.notes,
+    fileName: certificate.fileName,
+    fileType: certificate.fileType,
+    uploadedAt: certificate.uploadedAt?.toISOString?.() || certificate.createdAt?.toISOString?.()
+  };
+}
 
 function sign(user) {
   const role = user.role === "seeker" ? "employer" : user.role;
@@ -348,10 +373,45 @@ router.put("/me/location", requireAuth, async (req, res, next) => {
         email: user.email,
         role: user.role === "seeker" ? "employer" : user.role,
         location: user.location,
-        latitude: user.latitude,
-        longitude: user.longitude,
+        hasCoordinates:
+          Number.isFinite(user.latitude) && Number.isFinite(user.longitude),
         locationUpdatedAt: user.locationUpdatedAt
       }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/seeker-certificates", requireAuth, requireRole("employer"), async (req, res, next) => {
+  try {
+    const profile = await EmployerProfile.findOne({ userId: req.user._id });
+    res.json({ certificates: (profile?.certificates || []).map(serializeCertificate) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/seeker-certificates", requireAuth, requireRole("employer"), async (req, res, next) => {
+  try {
+    const body = seekerCertificateSchema.parse(req.body);
+    const profile = await EmployerProfile.findOneAndUpdate(
+      { userId: req.user._id },
+      {
+        $setOnInsert: {
+          userId: req.user._id,
+          businessName: `${req.user.name}'s Household`,
+          location: req.user.location || "Indiranagar"
+        }
+      },
+      { upsert: true, returnDocument: "after" }
+    );
+
+    profile.certificates.push(body);
+    await profile.save();
+
+    res.status(201).json({
+      certificates: profile.certificates.map(serializeCertificate)
     });
   } catch (error) {
     next(error);

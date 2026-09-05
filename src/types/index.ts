@@ -29,6 +29,9 @@ export interface Certification {
   credentialId?: string;
   description?: string;
   documentUrl?: string;
+  documentFileName?: string;
+  documentFileType?: string;
+  documentDataUrl?: string;
   verificationStatus: VerificationStatus;
   verifiedAt?: string | null;
   rejectionReason?: string;
@@ -108,6 +111,19 @@ export interface Gig {
   paymentType: 'fixed' | 'hourly';
   paymentAmount: number; // in ₹
   location: string;
+  maximumDistance?: number;
+  serviceMode?: 'scheduled' | 'emergency' | 'on_demand';
+  customerType?: 'household' | 'institution' | 'cooperative';
+  certificationRequired?: boolean;
+  certificateRequirementDetails?: string;
+  certificateName?: string;
+  certificateType?: string;
+  certificateDataUrl?: string;
+  hasCertificateUpload?: boolean;
+  insuranceIncluded?: boolean;
+  welfareContribution?: number;
+  invoiceRequired?: boolean;
+  emergencyContact?: string;
   urgency: 'normal' | 'urgent';
   status: GigStatus;
   employerId: string;

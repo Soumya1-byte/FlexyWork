@@ -1,4 +1,4 @@
-import { WorkerProfile, AvailabilitySlot, Certification, WorkExperience, WorkerVerificationStatusResponse } from '../types';
+import type { WorkerProfile, AvailabilitySlot, Certification, WorkExperience, WorkerVerificationStatusResponse } from '../types';
 import { apiCall } from './api';
 
 export interface ProviderSearchFilters {
@@ -98,6 +98,9 @@ export async function addCertification(payload: {
   credentialId?: string;
   description?: string;
   documentUrl?: string;
+  documentFileName?: string;
+  documentFileType?: string;
+  documentDataUrl?: string;
 }): Promise<Certification> {
   const data = await apiCall<{ certification: Certification }>('/api/workers/me/certifications', {
     method: 'POST',
@@ -116,6 +119,9 @@ export async function updateCertification(
     credentialId?: string;
     description?: string;
     documentUrl?: string;
+    documentFileName?: string;
+    documentFileType?: string;
+    documentDataUrl?: string;
   }
 ): Promise<Certification> {
   const data = await apiCall<{ certification: Certification }>(

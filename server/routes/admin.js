@@ -32,6 +32,9 @@ function serializeCertification(cert) {
     credentialId: cert.credentialId || "",
     description: cert.description || "",
     documentUrl: cert.documentUrl || "",
+    documentFileName: cert.documentFileName || "",
+    documentFileType: cert.documentFileType || "",
+    documentDataUrl: cert.documentDataUrl || "",
     verificationStatus: cert.verificationStatus || "pending",
     verifiedAt: cert.verifiedAt ? cert.verifiedAt.toISOString() : null,
     rejectionReason: cert.rejectionReason || ""
@@ -53,6 +56,7 @@ function serializeExperience(exp) {
 }
 
 function serializeWorker(profile, user) {
+  const status = computeWorkerVerificationStatus(profile);
   return {
     id: profile._id.toString(),
     userId: profile.userId.toString(),
@@ -71,7 +75,8 @@ function serializeWorker(profile, user) {
     responseTime: "Within 1 hour",
     hourlyRate: profile.expectedHourlyWage || 200,
     availability: profile.availability || [],
-    isVerified: profile.isVerified ?? true,
+    isVerified: status === "approved",
+    workerVerificationStatus: status,
     isTopRated: (profile.rating || 0) >= 4.8,
     avatarUrl: user?.profileImage,
     certifications: (profile.certifications || []).map(serializeCertification).filter(Boolean),
@@ -105,6 +110,18 @@ function serializeShift(shift, employer) {
     paymentType: shift.paymentType,
     paymentAmount: shift.paymentAmount,
     location: shift.location,
+    maximumDistance: shift.maximumDistance,
+    serviceMode: shift.serviceMode,
+    customerType: shift.customerType,
+    certificationRequired: shift.certificationRequired,
+    certificateRequirementDetails: shift.certificateRequirementDetails,
+    certificateName: shift.certificateName,
+    certificateType: shift.certificateType,
+    hasCertificateUpload: Boolean(shift.certificateDataUrl),
+    insuranceIncluded: shift.insuranceIncluded,
+    welfareContribution: shift.welfareContribution,
+    invoiceRequired: shift.invoiceRequired,
+    emergencyContact: shift.emergencyContact,
     urgency: shift.urgency,
     status: statusMap[shift.status] || "REQUESTED",
     employerId: shift.employerId.toString(),

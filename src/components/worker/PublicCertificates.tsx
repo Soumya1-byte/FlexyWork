@@ -9,7 +9,7 @@ import {
   ExternalLink,
   Check
 } from 'lucide-react';
-import { Certification, VerificationStatus } from '../../types';
+import type { Certification, VerificationStatus } from '../../types';
 
 interface Props {
   certifications?: Certification[];
@@ -141,6 +141,17 @@ export default function PublicCertificates({ certifications = [] }: Props) {
                     href={docUrl}
                     target="_blank"
                     rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white px-3.5 py-1.5 text-[11px] font-bold shadow-2xs btn-press transition-all"
+                  >
+                    <ExternalLink size={12} /> View Certificate
+                  </a>
+                </div>
+              )}
+              {cert.documentDataUrl && (
+                <div className="pt-3 mt-3 border-t border-surface-border">
+                  <a
+                    href={cert.documentDataUrl}
+                    download={cert.documentFileName || `${cert.title}-certificate`}
                     className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white px-3.5 py-1.5 text-[11px] font-bold shadow-2xs btn-press transition-all"
                   >
                     <ExternalLink size={12} /> View Certificate

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ShieldCheck, ShieldAlert, Clock4, UploadCloud, RefreshCw } from 'lucide-react';
-import { WorkerVerificationStatusResponse, WorkerVerificationStatus } from '../../types';
+import type { WorkerVerificationStatusResponse, WorkerVerificationStatus } from '../../types';
 import { getMyVerificationStatus } from '../../services/providers';
 
 type BannerState =

@@ -38,6 +38,17 @@ export type CreateGigInput = {
   paymentType?: 'fixed' | 'hourly';
   paymentAmount: number;
   location: string;
+  serviceMode?: 'scheduled' | 'emergency' | 'on_demand';
+  customerType?: 'household' | 'institution' | 'cooperative';
+  certificationRequired?: boolean;
+  certificateRequirementDetails?: string;
+  certificateName?: string;
+  certificateType?: string;
+  certificateDataUrl?: string;
+  insuranceIncluded?: boolean;
+  welfareContribution?: number;
+  invoiceRequired?: boolean;
+  emergencyContact?: string;
   urgency?: 'normal' | 'urgent';
   maximumDistance?: number;
 };
@@ -84,6 +95,14 @@ export async function updateApplicationStatus(applicationId: string, status: 'ac
     method: 'PATCH',
     body: JSON.stringify({ status })
   });
+}
+
+export async function getRequiredCertificate(gigId: string): Promise<{ name?: string; type?: string; dataUrl: string } | null> {
+  try {
+    return await apiCall<{ name?: string; type?: string; dataUrl: string }>(`/api/shifts/${gigId}/certificate`);
+  } catch {
+    return null;
+  }
 }
 
 export type ParsedShiftData = {
@@ -138,6 +157,3 @@ export async function getWageBenchmarks(): Promise<Record<string, { hourlyMin: n
   const data = await apiCall<{ benchmarks: any }>('/api/shifts/wage-benchmarks');
   return data.benchmarks;
 }
-
-
-

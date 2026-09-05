@@ -26,7 +26,7 @@ const shiftSchema = z.object({
   date: z.string().min(4),
   startTime: z.string().min(2),
   endTime: z.string().min(2),
-  duration: z.string().min(1),
+  duration: z.string().min(1).optional().default("4h"),
   paymentType: z.enum(["fixed", "hourly"]).default("fixed"),
   paymentAmount: z.coerce.number().min(1),
   location: z.string().min(2),
@@ -103,7 +103,7 @@ async function serializeShift(shift, workerProfile, viewerId) {
     time: `${shift.startTime} - ${shift.endTime}`,
     checkInTime: attendance?.checkInAt ? new Date(attendance.checkInAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : undefined,
     checkOutTime: attendance?.checkOutAt ? new Date(attendance.checkOutAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : undefined,
-    checkInOtp,
+    checkInOtp: viewerId && shift.employerId?.toString() === viewerId?.toString() ? checkInOtp : undefined,
     paymentStatus
   };
 }
@@ -139,14 +139,10 @@ router.get("/", optionalAuth, async (req, res, next) => {
   }
 });
 
-router.post("/", optionalAuth, async (req, res, next) => {
+router.post("/", requireAuth, requireRole("employer"), async (req, res, next) => {
   try {
     const body = shiftSchema.parse(req.body);
-    let employerId = req.user?._id;
-    if (!employerId) {
-      const defaultEmployer = await User.findOne({ role: "employer" }) || await User.findOne({});
-      employerId = defaultEmployer?._id;
-    }
+    const employerId = req.user._id;
     const shift = await Shift.create({ ...body, employerId, status: "published" });
     res.status(201).json({ shift: await serializeShift(shift) });
   } catch (error) {

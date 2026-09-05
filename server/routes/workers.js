@@ -23,6 +23,9 @@ function serializeCertification(cert) {
     credentialId: cert.credentialId || "",
     description: cert.description || "",
     documentUrl: cert.documentUrl || "",
+    documentFileName: cert.documentFileName || "",
+    documentFileType: cert.documentFileType || "",
+    documentDataUrl: cert.documentDataUrl || "",
     verificationStatus: cert.verificationStatus || "pending",
     verifiedAt: cert.verifiedAt ? cert.verifiedAt.toISOString() : null,
     rejectionReason: cert.rejectionReason || ""
@@ -172,7 +175,10 @@ const certificationPayload = z.object({
   expiryDate: z.string().max(20).optional().default(""),
   credentialId: z.string().max(80).optional().default(""),
   description: z.string().max(1000).optional().default(""),
-  documentUrl: z.string().max(500).optional().default("")
+  documentUrl: z.string().max(500).optional().default(""),
+  documentFileName: z.string().max(180).optional().default(""),
+  documentFileType: z.string().max(120).optional().default(""),
+  documentDataUrl: z.string().max(3_000_000).optional().default("")
 });
 
 const experiencePayload = z.object({
@@ -401,6 +407,9 @@ router.post("/me/certifications", requireAuth, requireRole("worker"), async (req
       credentialId: body.credentialId || "",
       description: body.description || "",
       documentUrl: body.documentUrl || "",
+      documentFileName: body.documentFileName || "",
+      documentFileType: body.documentFileType || "",
+      documentDataUrl: body.documentDataUrl || "",
       verificationStatus: "pending",
       verifiedBy: null,
       verifiedAt: null,
@@ -438,6 +447,9 @@ router.put(
       cert.credentialId = body.credentialId || "";
       cert.description = body.description || "";
       cert.documentUrl = body.documentUrl || "";
+      cert.documentFileName = body.documentFileName || "";
+      cert.documentFileType = body.documentFileType || "";
+      cert.documentDataUrl = body.documentDataUrl || "";
 
       // If the worker edits a previously verified certificate, force review again.
       if (cert.verificationStatus === "verified") {
